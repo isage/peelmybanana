@@ -1,4 +1,4 @@
-# peelmybanana
+# 🍌 peelmybanana 🍌
 
 **peelmybanana** is a packer / unpacker tool for the **Super Monkey Ball: Banana Splitz**
 
