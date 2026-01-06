@@ -9,7 +9,7 @@ public:
     Extractor(const std::filesystem::path& pk,
               const PKHIndex& pkh,
               const PFSTree& pfs,
-              const std::filesystem::path& out);
+              const std::filesystem::path& out, const bool iavt);
 
     void run();
 
@@ -21,4 +21,5 @@ private:
     const PKHIndex& pkh;
     const PFSTree& pfs;
     std::filesystem::path out_dir;
+    bool iavt;
 };

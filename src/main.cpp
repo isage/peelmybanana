@@ -17,6 +17,7 @@ int main(int argc, char** argv)
     .add_options()
       ("p,pack", "Pack", cxxopts::value<std::string>(), "<inputdir>")
       ("u,unpack", "Unpack", cxxopts::value<std::string>(), "<inputfile>")
+      ("i,iavt", "IA/VT mode", cxxopts::value<bool>()->default_value("false"))
       ("h,help", "Print usage")
   ;
 
@@ -27,6 +28,10 @@ int main(int argc, char** argv)
     std::cout << options.help({"","Pack","Unpack"}) << std::endl;
     return 0;
   }
+
+  bool iavt = result["iavt"].as<bool>();
+
+  std::cout << iavt << std::endl;
 
   if (result.count("pack"))
   {
@@ -42,7 +47,7 @@ int main(int argc, char** argv)
 
       PKHIndex pkh(base.string() + ".pkh");
       PFSTree pfs(base.string() + ".pfs");
-      Extractor extractor(base.string() + ".pk", pkh, pfs, base);
+      Extractor extractor(base.string() + ".pk", pkh, pfs, base, iavt);
       extractor.run();
       return 0;
   }

@@ -15,8 +15,9 @@ namespace fs = std::filesystem;
 Extractor::Extractor(const fs::path& pk,
                      const PKHIndex& pkh,
                      const PFSTree& pfs,
-                     const fs::path& out)
-    : pk_file(pk, std::ios::binary), pkh(pkh), pfs(pfs), out_dir(out) {
+                     const fs::path& out,
+                     const bool iavt)
+    : pk_file(pk, std::ios::binary), pkh(pkh), pfs(pfs), out_dir(out), iavt(iavt) {
     if (!pk_file) throw std::runtime_error("Failed to open PK file");
     fs::create_directories(out_dir);
 }
@@ -40,8 +41,16 @@ void Extractor::extract_file(const PKHNode& n, const fs::path& out) {
         z.next_out = ubuf.data();
         z.avail_out = ubuf.size();
 
-        if (inflateInit2(&z, 16 + MAX_WBITS) != Z_OK)
+        if (iavt)
+        {
+          if (inflateInit2(&z, 15) != Z_OK)
             throw std::runtime_error("inflateInit failed");
+        }
+        else
+        {
+          if (inflateInit2(&z, 16 + MAX_WBITS) != Z_OK)
+            throw std::runtime_error("inflateInit failed");
+        }
 
         int rc = inflate(&z, Z_FINISH);
         inflateEnd(&z);

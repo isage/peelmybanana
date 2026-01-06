@@ -18,6 +18,12 @@ cmake --build build
 ./peelmybanana -p <directory>
 ```
 
+For IA/VT:
+```bash
+./peelmybanana -i -u <base_filename>
+./peelmybanana -i -p <directory>
+```
+
 ## License
 
 MIT
