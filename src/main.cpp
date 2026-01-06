@@ -18,6 +18,7 @@ int main(int argc, char** argv)
       ("p,pack", "Pack", cxxopts::value<std::string>(), "<inputdir>")
       ("u,unpack", "Unpack", cxxopts::value<std::string>(), "<inputfile>")
       ("i,iavt", "IA/VT mode", cxxopts::value<bool>()->default_value("false"))
+      ("f,fate", "Fate/Extella LINK mode", cxxopts::value<bool>()->default_value("false"))
       ("h,help", "Print usage")
   ;
 
@@ -30,13 +31,15 @@ int main(int argc, char** argv)
   }
 
   bool iavt = result["iavt"].as<bool>();
+  bool fate = result["fate"].as<bool>();
+  if (fate) iavt = true;
 
   std::cout << iavt << std::endl;
 
   if (result.count("pack"))
   {
       std::filesystem::path base = result["pack"].as<std::string>();
-      Packer packer(base, iavt);
+      Packer packer(base, iavt, fate);
       packer.run();
       return 0;
   }
@@ -45,7 +48,7 @@ int main(int argc, char** argv)
   {
       std::filesystem::path base = result["unpack"].as<std::string>();
 
-      PKHIndex pkh(base.string() + ".pkh");
+      PKHIndex pkh(base.string() + ".pkh", fate);
       PFSTree pfs(base.string() + ".pfs");
       Extractor extractor(base.string() + ".pk", pkh, pfs, base, iavt);
       extractor.run();

@@ -3,7 +3,7 @@
 #include <fstream>
 #include <stdexcept>
 
-PKHIndex::PKHIndex(const std::filesystem::path& path) {
+PKHIndex::PKHIndex(const std::filesystem::path& path, bool fate) {
     std::ifstream in(path, std::ios::binary);
     if (!in) throw std::runtime_error("Failed to open PKH file");
 
@@ -13,13 +13,26 @@ PKHIndex::PKHIndex(const std::filesystem::path& path) {
 
     nodes.resize(count);
     for (auto& n : nodes) {
-        uint32_t r[4];
-        read_or_throw(in, r, sizeof(r));
-        n.crc = bswap32(r[0]);
-        n.offset = bswap32(r[1]);
-        n.uncompressed_size = bswap32(r[2]);
-        n.compressed_size = bswap32(r[3]);
-        by_crc[n.crc] = &n;
+        if (fate)
+        {
+            uint32_t r[6];
+            read_or_throw(in, r, sizeof(r));
+            n.crc = bswap32(r[0]);
+            n.offset = bswap32(r[3]);
+            n.uncompressed_size = bswap32(r[4]);
+            n.compressed_size = bswap32(r[5]);
+            by_crc[n.crc] = &n;
+        }
+        else
+        {
+            uint32_t r[4];
+            read_or_throw(in, r, sizeof(r));
+            n.crc = bswap32(r[0]);
+            n.offset = bswap32(r[1]);
+            n.uncompressed_size = bswap32(r[2]);
+            n.compressed_size = bswap32(r[3]);
+            by_crc[n.crc] = &n;
+        }
     }
 }
 

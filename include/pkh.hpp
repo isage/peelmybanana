@@ -11,12 +11,22 @@ struct PKHNode {
     uint32_t compressed_size;
 };
 
+struct PKHNodeFate {
+    uint32_t crc;
+    uint32_t zero0;
+    uint32_t zero1;
+    uint32_t offset;
+    uint32_t uncompressed_size;
+    uint32_t compressed_size;
+};
+
 class PKHIndex {
 public:
-    explicit PKHIndex(const std::filesystem::path& path);
+    explicit PKHIndex(const std::filesystem::path& path, bool fate);
     const PKHNode* find(uint32_t crc) const;
 
 private:
     std::vector<PKHNode> nodes;
     std::unordered_map<uint32_t, PKHNode*> by_crc;
+    bool fate;
 };

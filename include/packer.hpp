@@ -7,7 +7,7 @@
 
 class Packer {
 public:
-    Packer(const std::filesystem::path& in, bool iavt);
+    Packer(const std::filesystem::path& in, bool iavt, bool fate);
 
     void run();
     std::pair<size_t, size_t> compress_file(const std::filesystem::path& inputPath, std::ofstream& output);
@@ -15,4 +15,5 @@ public:
 private:
     std::filesystem::path in_dir;
     bool iavt;
+    bool fate;
 };

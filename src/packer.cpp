@@ -23,7 +23,7 @@ static std::time_t to_time_t(std::filesystem::file_time_type ft) {
     return system_clock::to_time_t(sctp);
 }
 
-Packer::Packer(const fs::path& in, bool iavt): in_dir(in), iavt(iavt)
+Packer::Packer(const fs::path& in, bool iavt, bool fate): in_dir(in), iavt(iavt), fate(fate)
 {
 }
 
@@ -136,38 +136,79 @@ void Packer::run() {
   outputPath = outputPath.replace_extension(".pk").filename();
   std::ofstream pkoutput(outputPath, std::ios::binary | std::ios::app);
 
-  std::map<uint32_t, PKHNode> pkh_nodes;
-
-  for(const auto& dirEntry: entries)
+  if (fate)
   {
-     fs::path rel = make_relative(dirEntry, in_dir);
+      std::map<uint32_t, PKHNodeFate> pkh_nodes;
 
-     if (fs::is_regular_file(dirEntry))
-     {
-         uint32_t crc = CRC32::compute(rel.string());
-         std::cout << "Packing " << rel << std::endl;
-         // gzip and append to pk
-         auto [compressedSize, originalSize] = compress_file(dirEntry, pkoutput);
-         // create pkh node
-         PKHNode node;
-         node.offset = bswap32(pkoutput.tellp());
-         node.crc = bswap32(crc);
-         node.compressed_size = bswap32(compressedSize);
-         node.uncompressed_size = bswap32(originalSize);
-         pkh_nodes.insert({crc, node});
-     }
+      for(const auto& dirEntry: entries)
+      {
+         fs::path rel = make_relative(dirEntry, in_dir);
 
+         if (fs::is_regular_file(dirEntry))
+         {
+             uint32_t crc = CRC32::compute(rel.string());
+             std::cout << "Packing " << rel << std::endl;
+             // gzip and append to pk
+             auto [compressedSize, originalSize] = compress_file(dirEntry, pkoutput);
+             // create pkh node
+             PKHNodeFate node;
+             node.offset = bswap32(pkoutput.tellp());
+             node.crc = bswap32(crc);
+             node.compressed_size = bswap32(compressedSize);
+             node.uncompressed_size = bswap32(originalSize);
+             node.zero0 = 0;
+             node.zero1 = 0;
+             pkh_nodes.insert({crc, node});
+         }
+
+      }
+
+      fs::path pkhoutputPath = in_dir;
+      pkhoutputPath = pkhoutputPath.replace_extension(".pkh").filename();
+
+      std::ofstream pkhoutput(pkhoutputPath, std::ios::binary | std::ios::app);
+      uint32_t pkh_num = bswap32(pkh_nodes.size());
+      pkhoutput.write(reinterpret_cast<const char*>(&pkh_num), sizeof(uint32_t));
+      for (auto it: pkh_nodes)
+      {
+        pkhoutput.write(reinterpret_cast<const char*>(&it.second), sizeof(PKHNodeFate));
+      }
   }
-
-  fs::path pkhoutputPath = in_dir;
-  pkhoutputPath = pkhoutputPath.replace_extension(".pkh").filename();
-
-  std::ofstream pkhoutput(pkhoutputPath, std::ios::binary | std::ios::app);
-  uint32_t pkh_num = bswap32(pkh_nodes.size());
-  pkhoutput.write(reinterpret_cast<const char*>(&pkh_num), sizeof(uint32_t));
-  for (auto it: pkh_nodes)
+  else
   {
-    pkhoutput.write(reinterpret_cast<const char*>(&it.second), sizeof(PKHNode));
+      std::map<uint32_t, PKHNode> pkh_nodes;
+
+      for(const auto& dirEntry: entries)
+      {
+         fs::path rel = make_relative(dirEntry, in_dir);
+
+         if (fs::is_regular_file(dirEntry))
+         {
+             uint32_t crc = CRC32::compute(rel.string());
+             std::cout << "Packing " << rel << std::endl;
+             // gzip and append to pk
+             auto [compressedSize, originalSize] = compress_file(dirEntry, pkoutput);
+             // create pkh node
+             PKHNode node;
+             node.offset = bswap32(pkoutput.tellp());
+             node.crc = bswap32(crc);
+             node.compressed_size = bswap32(compressedSize);
+             node.uncompressed_size = bswap32(originalSize);
+             pkh_nodes.insert({crc, node});
+         }
+
+      }
+
+      fs::path pkhoutputPath = in_dir;
+      pkhoutputPath = pkhoutputPath.replace_extension(".pkh").filename();
+
+      std::ofstream pkhoutput(pkhoutputPath, std::ios::binary | std::ios::app);
+      uint32_t pkh_num = bswap32(pkh_nodes.size());
+      pkhoutput.write(reinterpret_cast<const char*>(&pkh_num), sizeof(uint32_t));
+      for (auto it: pkh_nodes)
+      {
+        pkhoutput.write(reinterpret_cast<const char*>(&it.second), sizeof(PKHNode));
+      }
   }
 
 }
