@@ -4,6 +4,9 @@
 
 This tool extracts and repacks the game's proprietary archive formats (`.pk`, `.pkh`, `.pfs`).
 
+It also supports those games:
+* IA/VT Colorful
+
 ## Building
 
 ```bash
@@ -13,6 +16,7 @@ cmake --build build
 
 ## Usage
 
+For monkey ball
 ```bash
 ./peelmybanana -u <base_filename>
 ./peelmybanana -p <directory>

@@ -36,7 +36,7 @@ int main(int argc, char** argv)
   if (result.count("pack"))
   {
       std::filesystem::path base = result["pack"].as<std::string>();
-      Packer packer(base);
+      Packer packer(base, iavt);
       packer.run();
       return 0;
   }

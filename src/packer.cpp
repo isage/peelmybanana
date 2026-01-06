@@ -23,7 +23,7 @@ static std::time_t to_time_t(std::filesystem::file_time_type ft) {
     return system_clock::to_time_t(sctp);
 }
 
-Packer::Packer(const fs::path& in): in_dir(in)
+Packer::Packer(const fs::path& in, bool iavt): in_dir(in), iavt(iavt)
 {
 }
 
@@ -48,31 +48,48 @@ std::ifstream input(inputPath, std::ios::binary);
     }
 
     z_stream strm{};
-    if (deflateInit2(&strm,
-                     Z_DEFAULT_COMPRESSION,
+    if (iavt)
+    {
+        if (deflateInit2(&strm,
+                     Z_BEST_COMPRESSION,
                      Z_DEFLATED,
                      15 + 16, // gzip
                      8,
                      Z_DEFAULT_STRATEGY) != Z_OK) {
-        throw std::runtime_error("deflateInit2 failed");
+            throw std::runtime_error("deflateInit2 failed");
+        }
+    }
+    else
+    {
+        if (deflateInit2(&strm,
+                     Z_DEFAULT_COMPRESSION,
+                     Z_DEFLATED,
+                     15, // zlib
+                     8,
+                     Z_DEFAULT_STRATEGY) != Z_OK) {
+            throw std::runtime_error("deflateInit2 failed");
+        }
     }
 
-    gz_header header{};
-    std::memset(&header, 0, sizeof(header));
+    if (!iavt)
+    {
+        gz_header header{};
+        std::memset(&header, 0, sizeof(header));
 
-    std::string fname = inputPath.filename().string();
-    header.name     = reinterpret_cast<Bytef*>(fname.data());
-    header.name_max = fname.size() + 1;
-    header.time     = static_cast<uLong>(mtime);
-    header.os       = 11; // Windows / NTFS
+        std::string fname = inputPath.filename().string();
+        header.name     = reinterpret_cast<Bytef*>(fname.data());
+        header.name_max = fname.size() + 1;
+        header.time     = static_cast<uLong>(mtime);
+        header.os       = 11; // Windows / NTFS
 
-    if (deflateSetHeader(&strm, &header) != Z_OK) {
-        deflateEnd(&strm);
-        throw std::runtime_error("deflateSetHeader failed");
+        if (deflateSetHeader(&strm, &header) != Z_OK) {
+            deflateEnd(&strm);
+            throw std::runtime_error("deflateSetHeader failed");
+        }
     }
 
     std::vector<char> compressed;
-    compressed.resize(compressBound(originalSize));
+    compressed.resize(compressBound(originalSize) + 64);
 
     strm.next_in   = reinterpret_cast<Bytef*>(original.data());
     strm.avail_in  = originalSize;
@@ -80,9 +97,10 @@ std::ifstream input(inputPath, std::ios::binary);
     strm.avail_out = compressed.size();
 
     int ret = deflate(&strm, Z_FINISH);
+
     if (ret != Z_STREAM_END) {
         deflateEnd(&strm);
-        throw std::runtime_error("Compression failed");
+        throw std::runtime_error(std::string("Compression failed: ") + std::to_string(ret));
     }
 
     compressed.resize(strm.total_out);
